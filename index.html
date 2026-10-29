@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SitSmart Dashboard</title>
+<style>
+  :root {
+    --bg: #f4f7f5; --card: #ffffff; --ink: #1c2b25; --muted: #66756e; --line: #dfe7e2;
+    --good: #1f7a4d; --good-bg: #d9f0e3; --warn: #a26200; --warn-bg: #fbecc8;
+    --bad: #b3261e; --bad-bg: #fbdcd9; --info: #2f5fa8; --info-bg: #dbe6f7;
+    --body: #2f5fa8; --seat: #d2691e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1613; --card: #18221e; --ink: #e5eee9; --muted: #93a39b; --line: #28362f;
+      --good: #6fd6a0; --good-bg: #17382a; --warn: #f0c25c; --warn-bg: #3b2f12;
+      --bad: #ff8f86; --bad-bg: #432020; --info: #8db4f0; --info-bg: #1c2d49; --body: #8db4f0; --seat: #f0a064; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, sans-serif; }
+  main { max-width: 900px; margin: 0 auto; padding: 24px 16px 48px; display: grid; gap: 16px; }
+  header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  h1 { font-size: 22px; margin: 0; }
+  h2 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .pill { display: inline-block; padding: 3px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .ok { background: var(--good-bg); color: var(--good); }
+  .warn { background: var(--warn-bg); color: var(--warn); }
+  .bad { background: var(--bad-bg); color: var(--bad); }
+  .info { background: var(--info-bg); color: var(--info); }
+  .big { font-size: 34px; font-weight: 800; padding: 6px 18px; border-radius: 10px; display: inline-block; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  button { font: inherit; font-weight: 600; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--ink); cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+  dl { margin: 10px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; }
+  dt { color: var(--muted); } dd { margin: 0; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; }
+  svg { width: 100%; height: auto; display: block; }
+  .legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin-bottom: 6px; flex-wrap: wrap; }
+  .legend i { display: inline-block; width: 12px; height: 3px; margin-right: 5px; vertical-align: middle; }
+  footer { font-size: 12px; color: var(--muted); }
+  .empty { color: var(--muted); padding: 10px 8px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>SitSmart Dashboard</h1>
+    <span id="conn" class="pill warn">Menghubungkan…</span>
+  </header>
+
+  <section class="card">
+    <h2>Status postur</h2>
+    <span id="state" class="big info">…</span>
+    <p id="reason" style="color:var(--muted);margin:10px 0 0">Menunggu data dari detector.</p>
+    <div class="row">
+      <span id="calib" class="pill warn">Belum dikalibrasi</span>
+      <button id="btn-cal">Kalibrasi (duduk tegak dulu)</button>
+      <button id="btn-mon">Jeda monitoring</button>
+      <button id="btn-reset">Reset timer duduk</button>
+    </div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>Edge 1 · HP badan</h2>
+      <span id="b-pill" class="pill warn">Offline</span>
+      <dl>
+        <dt>Sudut condong</dt><dd id="b-lean">–</dd>
+        <dt>Gerakan (RMS)</dt><dd id="b-rms">–</dd>
+        <dt>Rotasi</dt><dd id="b-rot">–</dd>
+        <dt>Terakhir</dt><dd id="b-age">–</dd>
+      </dl>
+    </section>
+    <section class="card">
+      <h2>Edge 2 · HP kursi</h2>
+      <span id="s-pill" class="pill warn">Offline</span>
+      <dl>
+        <dt>Getaran kursi (RMS)</dt><dd id="s-rms">–</dd>
+        <dt>Rotasi</dt><dd id="s-rot">–</dd>
+        <dt>Diam selama</dt><dd id="s-still">–</dd>
+        <dt>Terakhir</dt><dd id="s-age">–</dd>
+      </dl>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>Sudut condong badan (derajat) — 60 data terakhir</h2>
+    <div class="legend">
+      <span><i style="background:var(--body)"></i>Sudut condong</span>
+      <span><i style="background:var(--bad);opacity:.6"></i>Ambang membungkuk</span>
+    </div>
+    <svg id="chart" viewBox="0 0 800 220" role="img" aria-label="Grafik sudut condong"></svg>
+  </section>
+
+  <section class="card">
+    <h2>Riwayat alert</h2>
+    <table>
+      <thead><tr><th>Waktu</th><th>Jenis</th><th>Risk</th><th>Alasan</th></tr></thead>
+      <tbody id="alerts"><tr><td colspan="4" class="empty">Belum ada alert.</td></tr></tbody>
+    </table>
+  </section>
+
+  <footer id="topics"></footer>
+</main>
+
+<script src="https://unpkg.com/mqtt@5/dist/mqtt.min.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const STATE_LABEL = {
+  GOOD: ["POSTUR BAIK", "ok"], SLOUCH: ["MEMBUNGKUK", "bad"], BREAK: ["ISTIRAHAT!", "bad"],
+  AWAY: ["ISTIRAHAT", "info"], COMMON_MOTION: ["GUNCANGAN", "warn"], CALIBRATE: ["KALIBRASI", "warn"],
+  OFFLINE: ["OFFLINE", "warn"], PAUSED: ["DIJEDA", "info"],
+};
+const history = [];      // sudut condong
+let cfg = null, client = null, monitoring = true;
+
+function ago(s) { return s == null ? "–" : s < 1.5 ? "baru saja" : Math.round(s) + " detik lalu"; }
+function mmss(s) { s = Math.round(s || 0); return Math.floor(s / 60) + " mnt " + (s % 60) + " dtk"; }
+function clock(ts) { return new Date(ts).toLocaleTimeString("id-ID"); }
+
+function drawChart() {
+  const W = 800, H = 220, L = 40, R = 10, T = 10, B = 24, max = 60;
+  const x = (i) => L + (i / 59) * (W - L - R), y = (v) => T + (1 - Math.min(v, max) / max) * (H - T - B);
+  let g = "";
+  for (const v of [0, 15, 30, 45, 60]) {
+    g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/>` +
+         `<text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${v}°</text>`;
+  }
+  if (cfg) g += `<line x1="${L}" x2="${W - R}" y1="${y(cfg.lean_threshold_deg)}" y2="${y(cfg.lean_threshold_deg)}" stroke="var(--bad)" stroke-dasharray="5 4" opacity=".6"/>`;
+  const pts = history.map((v, i) => v == null ? null : [x(i + 60 - history.length), y(v)]);
+  let d = "", pen = false;
+  for (const p of pts) { if (!p) { pen = false; continue; } d += (pen ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1) + " "; pen = true; }
+  if (d) g += `<path d="${d}" fill="none" stroke="var(--body)" stroke-width="2.2" stroke-linejoin="round"/>`;
+  $("chart").innerHTML = g;
+}
+
+function render(s) {
+  const [label, cls] = STATE_LABEL[s.state] || [s.state, "info"];
+  $("state").textContent = label; $("state").className = "big " + cls;
+  $("reason").textContent = s.reason + " (" + clock(s.ts) + ")";
+  $("calib").textContent = s.calibrated ? "Terkalibrasi" : "Belum dikalibrasi";
+  $("calib").className = "pill " + (s.calibrated ? "ok" : "warn");
+  monitoring = s.monitoring; $("btn-mon").textContent = monitoring ? "Jeda monitoring" : "Lanjutkan monitoring";
+
+  const b = s.body, k = s.seat;
+  $("b-pill").textContent = b && b.age_s <= 5 ? "Online" : "Offline"; $("b-pill").className = "pill " + (b && b.age_s <= 5 ? "ok" : "warn");
+  $("s-pill").textContent = k && k.age_s <= 5 ? "Online" : "Offline"; $("s-pill").className = "pill " + (k && k.age_s <= 5 ? "ok" : "warn");
+  $("b-lean").textContent = s.lean_deg == null ? "–" : s.lean_deg.toFixed(1) + "°";
+  $("b-rms").textContent = b ? b.rms.toFixed(3) + " m/s²" : "–";
+  $("b-rot").textContent = b ? b.rot.toFixed(3) + " rad" : "–";
+  $("b-age").textContent = b ? ago(b.age_s) : "–";
+  $("s-rms").textContent = k ? k.rms.toFixed(3) + " m/s²" : "–";
+  $("s-rot").textContent = k ? k.rot.toFixed(3) + " rad" : "–";
+  $("s-still").textContent = mmss(s.still_s);
+  $("s-age").textContent = k ? ago(k.age_s) : "–";
+
+  history.push(s.lean_deg); if (history.length > 60) history.shift();
+  drawChart();
+}
+
+function addAlert(a) {
+  const tb = $("alerts");
+  if (tb.querySelector(".empty")) tb.innerHTML = "";
+  const tr = document.createElement("tr");
+  for (const v of [clock(a.ts), a.type, a.risk.toFixed(2), a.reason]) {
+    const td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
+  }
+  tb.prepend(tr);
+  while (tb.children.length > 8) tb.lastChild.remove();
+}
+
+function send(cmd) { if (client) client.publish(`sitsmart/${cfg.project_id}/control`, JSON.stringify({ cmd })); }
+$("btn-cal").onclick = () => send("calibrate");
+$("btn-mon").onclick = () => send(monitoring ? "monitor_off" : "monitor_on");
+$("btn-reset").onclick = () => send("reset_timer");
+
+(async function start() {
+  cfg = await (await fetch("/config.json")).json();
+  const base = `sitsmart/${cfg.project_id}`;
+  $("topics").textContent = `Subscribe: ${base}/status · ${base}/alerts — Publish: ${base}/control`;
+  drawChart();
+  client = mqtt.connect(cfg.ws_url, { clientId: "sitsmart-dash-" + Math.random().toString(16).slice(2, 8) });
+  client.on("connect", () => { $("conn").textContent = "Terhubung"; $("conn").className = "pill ok";
+    client.subscribe([`${base}/status`, `${base}/alerts`]); });
+  client.on("close", () => { $("conn").textContent = "Terputus"; $("conn").className = "pill bad"; });
+  client.on("message", (topic, payload) => {
+    let d; try { d = JSON.parse(payload.toString()); } catch { return; }
+    if (topic.endsWith("/status")) render(d); else if (topic.endsWith("/alerts")) addAlert(d);
+  });
+})();
+</script>
+</body>
+</html>
